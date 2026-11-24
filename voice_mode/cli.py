@@ -1235,7 +1235,9 @@ def config_get(key):
     
     # Look for the key
     found = False
-    with open(env_file, 'r') as f:
+    import io
+    from voice_mode.config import read_env_file_text
+    with io.StringIO(read_env_file_text(env_file)) as f:
         for line in f:
             line = line.strip()
             if line.startswith('#') or not line:

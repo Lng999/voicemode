@@ -1,5 +1,6 @@
 """MCP resources for voice mode configuration."""
 
+import io
 import os
 from typing import Dict, Any
 from pathlib import Path
@@ -7,6 +8,7 @@ from pathlib import Path
 from ..server import mcp
 from ..config import (
     logger,
+    read_env_file_text,
     # Core settings
     BASE_DIR, DEBUG, SAVE_ALL, SAVE_AUDIO, SAVE_TRANSCRIPTIONS,
     AUDIO_FEEDBACK_ENABLED, PREFER_LOCAL, ALWAYS_TRY_LOCAL, AUTO_START_KOKORO,
@@ -218,7 +220,7 @@ def parse_env_file(file_path: Path) -> Dict[str, str]:
         return config
     
     try:
-        with open(file_path, 'r') as f:
+        with io.StringIO(read_env_file_text(file_path)) as f:
             for line in f:
                 line = line.strip()
                 # Skip empty lines and comments

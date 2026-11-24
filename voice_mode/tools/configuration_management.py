@@ -1,11 +1,12 @@
 """Configuration management tools for voice-mode."""
 
+import io
 import os
 import re
 from pathlib import Path
 from typing import Dict, Optional, List
 from voice_mode.server import mcp
-from voice_mode.config import BASE_DIR, reload_configuration, find_voicemode_env_files
+from voice_mode.config import BASE_DIR, reload_configuration, find_voicemode_env_files, read_env_file_text
 import logging
 
 logger = logging.getLogger("voicemode")
@@ -29,8 +30,7 @@ def parse_env_file(file_path: Path) -> Dict[str, str]:
     if not file_path.exists():
         return config
 
-    with open(file_path, 'r') as f:
-        lines = f.readlines()
+    lines = io.StringIO(read_env_file_text(file_path)).readlines()
 
     i = 0
     while i < len(lines):
@@ -136,8 +136,7 @@ def write_env_file(file_path: Path, config: Dict[str, str], preserve_comments: b
     commented_config_pattern = re.compile(r'^#\s*([A-Z][A-Z0-9_]*)=')
 
     if file_path.exists() and preserve_comments:
-        with open(file_path, 'r') as f:
-            lines = f.readlines()
+        lines = io.StringIO(read_env_file_text(file_path)).readlines()
 
         i = 0
         while i < len(lines):
@@ -260,7 +259,7 @@ def write_env_file(file_path: Path, config: Dict[str, str], preserve_comments: b
 
     # Write the file
     file_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding='utf-8') as f:
         if existing_lines:
             f.writelines(existing_lines)
         else:

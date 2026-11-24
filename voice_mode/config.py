@@ -5,6 +5,7 @@ This module contains all configuration constants, global state, initialization f
 and shared utilities used across the voicemode server.
 """
 
+import io
 import os
 import logging
 import asyncio
@@ -14,6 +15,22 @@ from typing import Dict, Optional
 from datetime import datetime
 
 # ==================== ENVIRONMENT CONFIGURATION ====================
+
+def read_env_file_text(path: Path) -> str:
+    """Read a voicemode.env file as UTF-8, whatever the platform's locale.
+
+    Without an explicit encoding, ``open()`` uses the locale's code page on
+    Windows, so the same file read differently per machine, and the default
+    template (which contains non-ASCII) could not be written at all where the
+    code page lacks those characters. A file written in the locale encoding
+    by an earlier version is not valid UTF-8 in general; read it as before.
+    A UTF-8 byte order mark (older Notepad) is dropped.
+    """
+    try:
+        return path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        return path.read_text()
+
 
 def find_voicemode_env_files() -> list[Path]:
     """
@@ -505,7 +522,7 @@ TTS \\bAPI\\b A P I # API as individual letters
 # OpenAI API key for cloud TTS/STT
 # OPENAI_API_KEY=your-key-here
 '''
-        with open(default_path, 'w') as f:
+        with open(default_path, 'w', encoding='utf-8') as f:
             f.write(default_config)
         os.chmod(default_path, 0o600)  # Secure permissions
         config_files = [default_path]
@@ -513,7 +530,7 @@ TTS \\bAPI\\b A P I # API as individual letters
     # Load configuration from all files in order (global first, project-specific last)
     for config_path in config_files:
         if config_path.exists():
-            with open(config_path, 'r') as f:
+            with io.StringIO(read_env_file_text(config_path)) as f:
                 lines = f.readlines()
                 i = 0
                 while i < len(lines):

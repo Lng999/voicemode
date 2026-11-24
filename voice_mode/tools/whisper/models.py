@@ -1,9 +1,10 @@
 """Whisper model registry and utilities."""
 
+import io
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, TypedDict
-from voice_mode.config import WHISPER_MODEL_PATH, WHISPER_MODEL
+from voice_mode.config import WHISPER_MODEL_PATH, WHISPER_MODEL, read_env_file_text
 
 
 class ModelInfo(TypedDict):
@@ -210,7 +211,7 @@ def set_active_model(model_name: str) -> None:
     multiline_quote = None
 
     if config_path.exists():
-        with open(config_path, 'r') as f:
+        with io.StringIO(read_env_file_text(config_path)) as f:
             for line in f:
                 stripped = line.strip()
 
@@ -252,7 +253,7 @@ def set_active_model(model_name: str) -> None:
         lines.append(f"VOICEMODE_WHISPER_MODEL={model_name}\n")
 
     # Write the updated configuration
-    with open(config_path, 'w') as f:
+    with open(config_path, 'w', encoding='utf-8') as f:
         f.writelines(lines)
 
 

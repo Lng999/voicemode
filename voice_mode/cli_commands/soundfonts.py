@@ -16,6 +16,8 @@ from pathlib import Path
 
 import click
 
+from voice_mode.config import read_env_file_text
+
 from voice_mode.cli_commands.claude import is_voicemode_hook
 
 
@@ -33,7 +35,7 @@ def _get_env_var_state() -> tuple:
     # Check voicemode.env file first — more actionable source
     file_val = None
     if VOICEMODE_ENV_FILE.exists():
-        for line in VOICEMODE_ENV_FILE.read_text().splitlines():
+        for line in read_env_file_text(VOICEMODE_ENV_FILE).splitlines():
             stripped = line.strip()
             if stripped.startswith('#'):
                 continue
@@ -116,10 +118,10 @@ def _update_env_file(enabled: bool) -> None:
 
     if not env_file.exists():
         env_file.parent.mkdir(parents=True, exist_ok=True)
-        env_file.write_text(f'VOICEMODE_SOUNDFONTS_ENABLED={value}\n')
+        env_file.write_text(f'VOICEMODE_SOUNDFONTS_ENABLED={value}\n', encoding='utf-8')
         return
 
-    lines = env_file.read_text().splitlines()
+    lines = read_env_file_text(env_file).splitlines()
     found = False
     for i, line in enumerate(lines):
         stripped = line.strip()
@@ -133,7 +135,7 @@ def _update_env_file(enabled: bool) -> None:
     if not found:
         lines.append(f'VOICEMODE_SOUNDFONTS_ENABLED={value}')
 
-    env_file.write_text('\n'.join(lines) + '\n')
+    env_file.write_text('\n'.join(lines) + '\n', encoding='utf-8')
 
 
 def _warn_env_var_conflict() -> None:
