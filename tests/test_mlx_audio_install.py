@@ -227,6 +227,49 @@ class TestServiceFileNameMapping:
         assert _SERVICE_FILE_NAMES["mlx_audio"] == "mlx-audio"
 
 
+class TestMlxAudioDisableAndLogs:
+    """``service disable`` / ``service logs`` find mlx-audio's kebab-case files."""
+
+    @pytest.fixture
+    def mac_home(self, tmp_path):
+        with patch("voice_mode.tools.service.platform.system", return_value="Darwin"), \
+             patch("voice_mode.tools.service.Path.home", return_value=tmp_path):
+            yield tmp_path
+
+    @pytest.mark.asyncio
+    async def test_disable_unloads_and_removes_the_kebab_case_plist(self, mac_home):
+        from voice_mode.tools.service import disable_service
+
+        plist = mac_home / "Library" / "LaunchAgents" / "com.voicemode.mlx-audio.plist"
+        plist.parent.mkdir(parents=True)
+        plist.write_text("<plist/>")
+
+        with patch("voice_mode.tools.service.subprocess.run",
+                   return_value=MagicMock(returncode=0, stdout="", stderr="")) as run:
+            result = await disable_service("mlx_audio")
+
+        assert "✅" in result, result
+        run.assert_called_once_with(
+            ["launchctl", "unload", "-w", str(plist)], capture_output=True, text=True
+        )
+        assert not plist.exists()
+
+    @pytest.mark.asyncio
+    async def test_logs_fall_back_to_the_kebab_case_log_files(self, mac_home):
+        from voice_mode.tools.service import view_logs
+
+        log_dir = mac_home / ".voicemode" / "logs" / "mlx-audio"
+        log_dir.mkdir(parents=True)
+        (log_dir / "mlx-audio.out.log").write_text("Uvicorn running on 127.0.0.1:8890\n")
+
+        # `log show` finds nothing, so view_logs reads the plist's log files.
+        with patch("voice_mode.tools.service.subprocess.run",
+                   return_value=MagicMock(returncode=0, stdout="", stderr="")):
+            result = await view_logs("mlx_audio", lines=10)
+
+        assert "Uvicorn running on 127.0.0.1:8890" in result, result
+
+
 class TestMlxAudioConfigVars:
     """``mlx_audio`` config vars provide HOME for plist substitution."""
 

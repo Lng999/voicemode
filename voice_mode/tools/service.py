@@ -761,8 +761,8 @@ async def disable_service(service_name: str) -> str:
     """Disable a service from starting at boot/login."""
     system = platform.system()
 
-    # Map service name to file name (voicemode uses "serve" in file names)
-    file_name = "serve" if service_name == "voicemode" else service_name
+    # Map service name to file name (voicemode -> serve, mlx_audio -> mlx-audio).
+    file_name = _service_file_name(service_name)
 
     try:
         if system == "Darwin":
@@ -825,8 +825,8 @@ async def view_logs(service_name: str, lines: Optional[int] = None) -> str:
     system = platform.system()
     lines = lines or 50
 
-    # Map service name to file/log name (voicemode uses "serve" in file names)
-    log_name = "serve" if service_name == "voicemode" else service_name
+    # Map service name to file/log name (voicemode -> serve, mlx_audio -> mlx-audio).
+    log_name = _service_file_name(service_name)
 
     try:
         if system == "Darwin":
