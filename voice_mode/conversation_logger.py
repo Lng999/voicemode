@@ -102,13 +102,24 @@ class ConversationLogger:
                 f.seek(0, 2)
                 file_size = f.tell()
                 
-                # Read backwards until we find a newline
-                buffer_size = min(file_size, 1024)
-                f.seek(max(0, file_size - buffer_size))
-                
-                lines = f.read().decode('utf-8').strip().split('\n')
+                # Read backwards until we have the whole last line. An entry
+                # can be longer than one block (a long TTS message), so keep
+                # reading until a newline precedes it or the file starts.
+                data = b''
+                pos = file_size
+                while pos > 0:
+                    step = min(pos, 4096)
+                    pos -= step
+                    f.seek(pos)
+                    data = f.read(step) + data
+                    if b'\n' in data.rstrip(b'\r\n'):
+                        break
+
+                # Decode only the last line: the block boundary can fall
+                # inside a multi-byte character of an earlier line.
+                lines = data.strip().split(b'\n')
                 if lines:
-                    return json.loads(lines[-1])
+                    return json.loads(lines[-1].decode('utf-8'))
         except Exception:
             return None
         
